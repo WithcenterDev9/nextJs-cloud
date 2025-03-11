@@ -22,24 +22,50 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      - name: Upload node_modules
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-dependencies
+          path: node_modules
+          if-no-files-found: error
+
+
+  vercel:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Downloading artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: node-dependencies 
+          path: node_modules 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
-
-      - name: Building
-        run: npm run build:cloudflare
-
-      - name: Deploy to Cloudflare
-        uses: cloudflare/wrangler-action@v3
-        with: 
-          apiToken: ${{secrets.CLOUDFLARE_API_TOKEN}}
-
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build Project Artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+      
 
+  cloudflare:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Downloading artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: node-dependencies 
+          path: node_modules 
+      - name: Building
+        run: npm run build:cloudflare
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with: 
+          apiToken: ${{secrets.CLOUDFLARE_API_TOKEN}}
+
+    
   # tba testing
 
 
